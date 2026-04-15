@@ -1,0 +1,21 @@
+id,category,question,recall_at_3,recall_at_5,mrr,faithfulness,answer_relevance,pipeline,pipeline_path,hallucination_check
+1,drug_dosage,What is the maximum daily dose of metformin?,0.0,0.0,0.0,0.7272727272727273,0.8615305708382002,Naive RAG,,
+2,drug_dosage,What is the initial dose of lisinopril for hypertension?,0.0,0.0,0.0,0.6470588235294118,0.8736475039162579,Naive RAG,,
+3,drug_dosage,What is the target INR range for atrial fibrillation on warfarin?,0.0,0.0,0.0,0.7272727272727273,0.9396471526705481,Naive RAG,,
+4,drug_dosage,What is the standard adult dose of amoxicillin for infections?,0.0,0.0,0.0,0.7857142857142857,0.8759996750016954,Naive RAG,,
+5,drug_dosage,What dose of atorvastatin is considered high-intensity?,0.0,0.0,0.0,0.5333333333333333,0.815555399588884,Naive RAG,,
+6,clinical_guideline,What are the components of the sepsis Hour-1 Bundle?,0.0,0.0,0.0,0.2111111111111111,0.6440862981227887,Naive RAG,,
+7,clinical_guideline,What is Stage 2 hypertension per ACC/AHA 2017?,0.0,0.0,0.0,0.5217391304347826,0.8913412491644432,Naive RAG,,
+8,clinical_guideline,What is the HbA1c target for most adults with type 2 diabetes?,0.0,0.0,0.0,0.46875,0.7998359514635391,Naive RAG,,
+9,clinical_guideline,What is the door-to-balloon time target for STEMI?,0.0,0.0,0.0,0.3225806451612903,0.6997105732530231,Naive RAG,,
+10,clinical_guideline,What is the blood glucose target for sepsis patients?,0.0,0.0,0.0,0.86,0.815515119257296,Naive RAG,,
+1,drug_dosage,What is the maximum daily dose of metformin?,0.0,0.0,0.0,0.5217391304347826,0.8610274095887809,CRAG,RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → GENERATE → HALLUCINATION_CHECK,grounded
+2,drug_dosage,What is the initial dose of lisinopril for hypertension?,0.0,0.0,0.0,0.6,0.8766161752627362,CRAG,RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → GENERATE → HALLUCINATION_CHECK,grounded
+3,drug_dosage,What is the target INR range for atrial fibrillation on warfarin?,0.0,0.0,0.0,0.34782608695652173,0.9351218744899288,CRAG,RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → GENERATE → HALLUCINATION_CHECK,grounded
+4,drug_dosage,What is the standard adult dose of amoxicillin for infections?,0.0,0.0,0.0,0.3235294117647059,0.8425967370786471,CRAG,RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → GENERATE → HALLUCINATION_CHECK,grounded
+5,drug_dosage,What dose of atorvastatin is considered high-intensity?,1.0,1.0,0.5,0.19753086419753085,0.6716664589075918,CRAG,RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → WEB_SEARCH → GENERATE → HALLUCINATION_CHECK,grounded
+6,clinical_guideline,What are the components of the sepsis Hour-1 Bundle?,0.0,0.0,0.0,0.2926829268292683,0.7172662656329571,CRAG,RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → GENERATE → HALLUCINATION_CHECK,grounded
+7,clinical_guideline,What is Stage 2 hypertension per ACC/AHA 2017?,0.0,0.0,0.0,0.34782608695652173,0.9101902863616411,CRAG,RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → GENERATE → HALLUCINATION_CHECK,not_grounded
+8,clinical_guideline,What is the HbA1c target for most adults with type 2 diabetes?,0.0,0.0,0.0,0.391304347826087,0.8618903767450636,CRAG,RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → GENERATE → HALLUCINATION_CHECK,grounded
+9,clinical_guideline,What is the door-to-balloon time target for STEMI?,0.0,0.0,0.0,0.18518518518518517,0.8489326295236892,CRAG,RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → GENERATE → HALLUCINATION_CHECK,grounded
+10,clinical_guideline,What is the blood glucose target for sepsis patients?,0.0,0.0,0.0,0.4375,0.8650007369701538,CRAG,RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → TRANSFORM_QUERY → RETRIEVE → GRADE_DOCUMENTS → GENERATE → HALLUCINATION_CHECK,grounded

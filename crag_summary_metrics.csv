@@ -1,0 +1,7 @@
+Metric,Naive RAG,CRAG,Improvement,Higher Better
+Recall@3,0.0%,10.0%,+10.0%,✅
+Recall@5,0.0%,10.0%,+10.0%,✅
+MRR,0.000,0.050,+5.0%,✅
+Faithfulness,58.0%,36.5%,-21.6%,✅
+Hallucination Rate,10.0%,10.0%,+0.0%,❌ (lower better)
+Answer Relevance,0.822,0.839,+1.7%,✅
