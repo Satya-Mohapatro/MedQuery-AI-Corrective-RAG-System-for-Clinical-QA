@@ -10,7 +10,7 @@
 
 ---
 
-## 📌 Problem Statement
+##  Problem Statement
 
 Standard LLMs hallucinate — they confidently generate incorrect medical facts (wrong dosages, wrong drug interactions, wrong thresholds). In healthcare, this is **life-threatening**.
 
@@ -23,40 +23,13 @@ Basic RAG systems simply retrieve documents and feed them to an LLM with **no qu
 
 ---
 
-## 🏗️ System Architecture
+##  System Architecture
 
 ### CRAG Pipeline Flow
 <p align="center">
   <img src="crag_pipeline.svg" alt="CRAG Pipeline Architecture" width="85%"/>
 </p>
 
-```
-┌───────────────────────────────────────────────────────────────────┐
-│                     DATA INGESTION (ingest.py)                    │
-│  PDF Files (data/) → PyPDFDirectoryLoader → 637 pages             │
-│  → RecursiveCharacterTextSplitter (500 chars, 50 overlap)         │
-│  → 5,961 chunks → all-MiniLM-L6-v2 → ChromaDB (persisted)        │
-└───────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌───────────────────────────────────────────────────────────────────┐
-│                    CRAG LANGGRAPH PIPELINE                        │
-│                                                                   │
-│   ① RETRIEVE    → k-NN similarity search in ChromaDB (k=5)       │
-│   ② GRADE       → LLM grades each doc: RELEVANT / IRRELEVANT     │
-│   ③ ROUTE       → Conditional edge decides next step              │
-│   ④ TRANSFORM   → LLM rewrites query with clinical terminology   │
-│   ⑤ WEB SEARCH  → Tavily API fallback (3 web results)            │
-│   ⑥ GENERATE    → Groq Llama 3.1 generates grounded answer       │
-│   ⑦ HALL CHECK  → LLM verifies every claim is context-grounded   │
-└───────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌───────────────────────────────────────────────────────────────────┐
-│                     STREAMLIT FRONTEND                            │
-│   Query Interface · Pipeline Trace · Metrics Dashboard · History  │
-└───────────────────────────────────────────────────────────────────┘
-```
 
 ### Corrective Routing Logic
 
@@ -69,7 +42,7 @@ Query → RETRIEVE → GRADE DOCS → [CONDITIONAL ROUTE]
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 MedQuery-AI-Corrective-RAG-System-for-Clinical-QA/
@@ -135,7 +108,7 @@ jupyter notebook Notebook/medical_crag.ipynb
 
 ---
 
-## 🧠 Core Concepts
+##  Core Concepts
 
 ### Corrective RAG (CRAG)
 Unlike basic RAG which blindly feeds retrieved docs to an LLM, CRAG adds **self-correction loops**:
@@ -169,7 +142,7 @@ After generation, the LLM verifies its own answer against the source context:
 
 ---
 
-## 🔵 Pipeline Nodes
+##  Pipeline Nodes
 
 | Node | Purpose | Details |
 |---|---|---|
@@ -183,7 +156,7 @@ After generation, the LLM verifies its own answer against the source context:
 
 ---
 
-## 📊 Evaluation Metrics
+##  Evaluation Metrics
 
 | Metric | Formula | What It Measures |
 |---|---|---|
@@ -203,7 +176,7 @@ After generation, the LLM verifies its own answer against the source context:
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Category | Technology | Purpose |
 |---|---|---|
@@ -220,7 +193,7 @@ After generation, the LLM verifies its own answer against the source context:
 
 ---
 
-## 💻 Streamlit Frontend Features
+##  Streamlit Frontend Features
 
 - **🔍 Query Interface** — Text input + 8 pre-built example clinical questions
 - **🔀 Pipeline Trace** — Color-coded badges showing the exact path taken (RETRIEVE → GRADE → GENERATE, etc.)
@@ -234,7 +207,7 @@ After generation, the LLM verifies its own answer against the source context:
 
 ---
 
-## 🔑 API Keys Required
+##  API Keys Required
 
 | Service | Free Tier | Get Key |
 |---|---|---|
@@ -244,7 +217,7 @@ After generation, the LLM verifies its own answer against the source context:
 
 ---
 
-## 📜 License
+##  License
 
 This project is for educational purposes as part of a Mini Project in Generative AI.
 
