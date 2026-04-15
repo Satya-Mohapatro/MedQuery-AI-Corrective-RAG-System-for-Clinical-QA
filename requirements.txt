@@ -27,15 +27,15 @@ chromadb>=0.5.0
 # -- Web Search Fallback -------------------------------------
 tavily-python>=0.3.0
 
+# -- Component Splitters -------------------------------------
+langchain-text-splitters>=0.2.0
+
 # -- Document Processing -------------------------------------
 pypdf>=3.0.0
-tiktoken>=0.5.0
-unstructured>=0.10.0       # For various doc formats (optional)
+# unstructured>=0.10.0   # Removed: Causes severe build errors and huge disk bloat on cloud
 
 # -- Scientific Computing ------------------------------------
 numpy>=1.24.0
-scikit-learn>=1.3.0
-pandas>=2.0.0
 
 # -- Visualization & Notebook --------------------------------
 jupyter>=1.0.0
