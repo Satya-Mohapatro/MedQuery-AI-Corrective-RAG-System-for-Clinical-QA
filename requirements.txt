@@ -8,15 +8,18 @@
 langchain>=0.2.0
 langchain-core>=0.2.0
 langchain-community>=0.2.0
-langchain-google-genai>=1.0.0
 langchain-chroma>=0.1.0
 
 # -- LangGraph (Agentic Pipeline) ----------------------------
 langgraph>=0.1.0
 
-# -- LLM & Embeddings ----------------------------------------
-google-generativeai>=0.5.0
+# -- Groq LLM (Free, fast — get key at console.groq.com) ------
+langchain-groq>=0.1.0
+groq>=0.9.0
+
+# -- HuggingFace Embeddings ONLY (for all-MiniLM-L6-v2) ------
 sentence-transformers>=2.2.0
+langchain-huggingface>=0.0.6
 
 # -- Vector Store --------------------------------------------
 chromadb>=0.5.0
@@ -61,17 +64,14 @@ tenacity>=8.2.0
 #  2. Install all deps:
 #     pip install -r requirements.txt
 #
-#  3. Set API keys (create .env file or export):
-#     GOOGLE_API_KEY=your_key_here
+#  3. Set API keys (create .env file):
+#     GROQ_API_KEY=your_key_here   (get free at console.groq.com)
 #     TAVILY_API_KEY=your_key_here
 #     LANGSMITH_API_KEY=your_key_here  (optional)
 #
 #  4. Run Jupyter notebook:
-#     jupyter notebook medical_crag.ipynb
+#     jupyter notebook Notebook/medical_crag.ipynb
 #
 #  5. Run Streamlit app:
 #     streamlit run streamlit_app.py
-#
-#  GPU acceleration (optional, for faster embeddings):
-#     pip install torch torchvision  # CUDA version from pytorch.org
 # ============================================================
