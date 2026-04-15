@@ -1,7 +1,7 @@
 """
 ╔══════════════════════════════════════════════════════════════════════╗
 ║   🏥 Medical CRAG QA System — Streamlit Frontend (Phase 2)          ║
-║   LangGraph + Gemini + ChromaDB + Sentence Transformers              ║
+║   LangGraph + Groq (Llama 3) + ChromaDB + Sentence Transformers       ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
 Run: streamlit run streamlit_app.py
@@ -92,6 +92,7 @@ st.markdown("""
     /* Answer box */
     .answer-box {
         background: #f8fafc;
+        color: #0f172a;
         border-left: 4px solid #2563eb;
         padding: 1.2rem 1.5rem;
         border-radius: 0 8px 8px 0;
@@ -147,13 +148,13 @@ if "uploaded_docs_count" not in st.session_state:
 # LAZY IMPORTS (only load heavy libs when needed)
 # ─────────────────────────────────────────────────────────────────────
 @st.cache_resource
-def load_models(google_api_key: str, tavily_api_key: str):
+def load_models(groq_api_key: str, tavily_api_key: str):
     """Load and cache all ML models and tools (called once per session)."""
-    from langchain_google_genai import ChatGoogleGenerativeAI
     from langchain_community.embeddings import HuggingFaceEmbeddings
     from langchain_community.tools.tavily_search import TavilySearchResults
+    from langchain_groq import ChatGroq
 
-    os.environ["GOOGLE_API_KEY"] = google_api_key
+    os.environ["GROQ_API_KEY"]   = groq_api_key
     os.environ["TAVILY_API_KEY"] = tavily_api_key
 
     with st.spinner("Loading embedding model (all-MiniLM-L6-v2)..."):
@@ -163,26 +164,41 @@ def load_models(google_api_key: str, tavily_api_key: str):
             encode_kwargs={"normalize_embeddings": True}
         )
 
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",
-        temperature=0.1,
-        max_output_tokens=2048,
-        google_api_key=google_api_key
-    )
+    with st.spinner("Connecting to Groq LLM (llama-3.1-8b-instant)..."):
+        llm = ChatGroq(
+            model="llama-3.1-8b-instant",
+            temperature=0.1,
+            max_tokens=1024,
+            groq_api_key=groq_api_key
+        )
 
     web_search = TavilySearchResults(max_results=3, search_depth="advanced")
-
     return embeddings, llm, web_search
 
 
 @st.cache_resource
 def load_default_vectorstore(_embeddings):
-    """Load ChromaDB with default medical corpus (cached)."""
-    from langchain.schema import Document
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
+    """Load ChromaDB from the persisted medical corpus if available, else load default (cached)."""
+    from langchain_core.documents import Document
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
     from langchain_chroma import Chroma
+    import os
+    from pathlib import Path
 
-    # Default corpus (same as notebook)
+    PROJECT_ROOT = Path(".").resolve()
+    CHROMA_PERSIST_DIR = str(PROJECT_ROOT / "chroma_medical_db")
+    COLLECTION_NAME = "medical_documents"
+
+    if Path(CHROMA_PERSIST_DIR).exists():
+        # Load the comprehensive combined vectorstore!
+        vs = Chroma(
+            persist_directory=CHROMA_PERSIST_DIR,
+            embedding_function=_embeddings,
+            collection_name=COLLECTION_NAME
+        )
+        return vs
+
+    # Default corpus fallback (same as notebook)
     DEFAULT_DOCS = [
         Document(page_content="""Metformin standard adult dosage: Initial dose 500 mg twice daily with meals.
         Maximum daily dose: 2550 mg/day. Contraindications: eGFR < 30 mL/min/1.73m².
@@ -263,7 +279,8 @@ def load_default_vectorstore(_embeddings):
                   metadata={"title": "Pneumonia Diagnosis and Management", "category": "symptom_diagnosis"}),
     ]
 
-    splitter = __import__("langchain").text_splitter.RecursiveCharacterTextSplitter(
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+    splitter = RecursiveCharacterTextSplitter(
         chunk_size=500, chunk_overlap=50
     )
     chunks = splitter.split_documents(DEFAULT_DOCS)
@@ -287,7 +304,7 @@ def run_crag_streamlit(question: str, vectorstore, llm, web_search_tool,
     """
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.output_parsers import StrOutputParser
-    from langchain.schema import Document
+    from langchain_core.documents import Document
     from sklearn.metrics.pairwise import cosine_similarity
 
     retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": k})
@@ -300,15 +317,16 @@ def run_crag_streamlit(question: str, vectorstore, llm, web_search_tool,
     # ── STEP 1: RETRIEVE ──
     update_status("Retrieving relevant documents from ChromaDB...")
     pipeline_trace.append("RETRIEVE")
-    docs = retriever.get_relevant_documents(question)
+    docs = retriever.invoke(question)
 
     # ── STEP 2: GRADE DOCUMENTS ──
-    update_status("Grading document relevance with Gemini LLM...")
+    update_status("Grading document relevance with HuggingFace LLM...")
     pipeline_trace.append("GRADE_DOCUMENTS")
 
     GRADE_PROMPT = ChatPromptTemplate.from_messages([
-        ("system", """You are a medical relevance grader.
-Respond ONLY with JSON: {"relevance": "RELEVANT"|"IRRELEVANT"|"AMBIGUOUS", "reason": "..."}"""),
+        ("system", "You are a medical relevance grader. "
+         "Respond ONLY with JSON: {{\"relevance\": \"RELEVANT\"|\"IRRELEVANT\"|\"AMBIGUOUS\", \"reason\": \"...\"}} "
+         "No extra text."),
         ("human", "Question: {question}\n\nDocument:\n{document}")
     ])
     grade_chain = GRADE_PROMPT | llm | StrOutputParser()
@@ -360,9 +378,9 @@ Respond ONLY with JSON: {"relevance": "RELEVANT"|"IRRELEVANT"|"AMBIGUOUS", "reas
         transform_chain = TRANSFORM_PROMPT | llm | StrOutputParser()
         transformed_query = transform_chain.invoke({"question": question}).strip()
 
-        update_status(f"Re-retrieving with transformed query...")
+        update_status("Re-retrieving with transformed query...")
         pipeline_trace.append("RE-RETRIEVE")
-        docs = retriever.get_relevant_documents(transformed_query)
+        docs = retriever.invoke(transformed_query)
         route = "generate"
 
     # ── STEP 5: WEB SEARCH (if all irrelevant) ──
@@ -383,7 +401,7 @@ Respond ONLY with JSON: {"relevance": "RELEVANT"|"IRRELEVANT"|"AMBIGUOUS", "reas
             st.warning(f"Web search failed: {e}")
 
     # ── STEP 6: GENERATE ──
-    update_status("Generating answer with Gemini...")
+    update_status("Generating answer with HuggingFace LLM...")
     pipeline_trace.append("GENERATE")
 
     context_docs = [g["document"] for g in graded_docs if g["relevance"] in ("RELEVANT", "AMBIGUOUS")]
@@ -409,8 +427,9 @@ End with: SOURCES: [document titles used]"""),
     pipeline_trace.append("HALLUCINATION_CHECK")
 
     HALL_PROMPT = ChatPromptTemplate.from_messages([
-        ("system", """Verify if this medical answer is grounded in the context.
-Respond ONLY with JSON: {"verdict": "grounded"|"not_grounded", "confidence": 0.0-1.0, "ungrounded_claims": [...]}"""),
+        ("system", "Verify if this medical answer is grounded in the context. "
+         "Respond ONLY with JSON: {{\"verdict\": \"grounded\"|\"not_grounded\", "
+         "\"confidence\": 0.0-1.0, \"ungrounded_claims\": [...]}} No extra text."),
         ("human", "Answer: {answer}\n\nContext: {context}")
     ])
     hall_chain = HALL_PROMPT | llm | StrOutputParser()
@@ -573,12 +592,18 @@ def render_metrics_dashboard(metrics: Dict[str, float], hallucination_verdict: s
 with st.sidebar:
     st.markdown("## ⚙️ Configuration")
 
-    google_key = st.text_input("Google API Key", type="password",
-                                value=os.environ.get("GOOGLE_API_KEY", ""),
-                                help="Required for Gemini LLM")
-    tavily_key = st.text_input("Tavily API Key", type="password",
-                                 value=os.environ.get("TAVILY_API_KEY", ""),
-                                 help="For web search fallback")
+    groq_key = st.text_input(
+        "Groq API Key",
+        type="password",
+        value=os.environ.get("GROQ_API_KEY", ""),
+        help="Free key from console.groq.com — no credit card needed"
+    )
+    tavily_key = st.text_input(
+        "Tavily API Key",
+        type="password",
+        value=os.environ.get("TAVILY_API_KEY", ""),
+        help="For web search fallback"
+    )
 
     st.divider()
     st.markdown("## 📤 Upload Medical Documents")
@@ -589,12 +614,12 @@ with st.sidebar:
         help="Documents will be chunked and indexed in ChromaDB"
     )
 
-    if uploaded_files and google_key:
+    if uploaded_files and groq_key:
         if st.button("🔄 Index Uploaded Documents", use_container_width=True):
             try:
                 import pypdf
-                from langchain.schema import Document
-                from langchain.text_splitter import RecursiveCharacterTextSplitter
+                from langchain_core.documents import Document
+                from langchain_text_splitters import RecursiveCharacterTextSplitter
                 from langchain_community.embeddings import HuggingFaceEmbeddings
                 from langchain_chroma import Chroma
 
@@ -654,7 +679,7 @@ with st.sidebar:
 st.markdown("""
 <div class="main-header">
     <h1>🏥 Medical CRAG QA System</h1>
-    <p>Corrective Retrieval-Augmented Generation · LangGraph · Gemini · ChromaDB · Sentence Transformers</p>
+    <p>Corrective Retrieval-Augmented Generation · LangGraph · Groq (Llama 3) · ChromaDB · Sentence Transformers</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -707,15 +732,14 @@ with tab_query:
         if st.button("🔬 Run CRAG Analysis", type="primary", use_container_width=True):
             if not question.strip():
                 st.warning("Please enter a clinical question.")
-            elif not google_key:
-                st.error("Please provide your Google API Key in the sidebar.")
+            elif not groq_key:
+                st.error("Please provide your Groq API Key in the sidebar (free at console.groq.com).")
             elif not tavily_key:
                 st.error("Please provide your Tavily API Key in the sidebar.")
             else:
                 try:
-                    # Load models
-                    with st.spinner("Initializing models..."):
-                        embeddings, llm_model, web_search = load_models(google_key, tavily_key)
+                    with st.spinner("Initializing Groq LLM + embeddings..."):
+                        embeddings, llm_model, web_search = load_models(groq_key, tavily_key)
 
                     # Load vectorstore
                     if st.session_state.vectorstore is None:
@@ -861,62 +885,18 @@ with tab_history:
 
 
 # ── TAB 4: ARCHITECTURE ──
+import base64
+
 with tab_architecture:
     st.markdown("### 🏗️ CRAG Pipeline Architecture")
+    with open("crag_pipeline.svg", "r", encoding="utf-8") as f:
+        svg_content = f.read()
 
-    st.markdown("""
-```
-                    ┌─────────────────────────────────────────────┐
-                    │           CRAG LANGGRAPH PIPELINE            │
-                    └─────────────────────────────────────────────┘
-
-  Clinical Question
-        │
-        ▼
-  ┌─────────────┐      ChromaDB
-  │   RETRIEVE  │◄──── k-NN Similarity Search (k=5)
-  │    (Node 1) │      Sentence Transformer Embeddings
-  └──────┬──────┘
-         │ Retrieved Documents
-         ▼
-  ┌─────────────────┐
-  │ GRADE DOCUMENTS │    Gemini LLM judges each doc:
-  │    (Node 2)     │──► RELEVANT / IRRELEVANT / AMBIGUOUS
-  └────────┬────────┘
-           │
-    ┌──────┴──────────────────┐
-    │  CONDITIONAL ROUTING    │
-    └──┬──────────┬───────────┘
-       │          │           │
-  All  │   Mixed  │  All      │
- RELEV │ RELEV/   │ IRRELEV   │
-       ▼  AMBIG   ▼           ▼
-  ┌─────────┐  ┌───────────────┐  ┌─────────────────┐
-  │         │  │TRANSFORM QUERY│  │ WEB SEARCH      │
-  │         │  │   (Node 4)    │  │ FALLBACK        │
-  │         │  │ Gemini rewrites│  │ (Tavily API)    │
-  │         │  │ with medical  │  │   (Node 5)      │
-  │         │  │ terminology   │  └────────┬────────┘
-  │         │  └──────┬────────┘           │
-  │         │         │ Re-RETRIEVE        │
-  │         │         └─────────────────►  │
-  │   GENERATE ◄──────────────────────────┘
-  │  (Node 6) │
-  │ Gemini LLM│ Grounded answer with source citations
-  └─────┬─────┘
-        │
-        ▼
-  ┌─────────────────────┐
-  │ HALLUCINATION CHECK │   Gemini verifies: are all claims
-  │     (Node 7)        │   supported by retrieved context?
-  └──────────┬──────────┘
-             │
-    grounded │ not_grounded (retry → web search)
-             │
-             ▼
-        Final Answer + Sources + Metrics
-```
-    """)
+    b64 = base64.b64encode(svg_content.encode("utf-8")).decode("utf-8")
+    st.markdown(
+        f'<img src="data:image/svg+xml;base64,{b64}" style="width:65%; display:block; margin:auto;" />',
+        unsafe_allow_html=True,
+    )
 
     st.divider()
     st.markdown("### 📐 Metric Formulas")
@@ -947,7 +927,8 @@ with tab_architecture:
 - LangChain (prompts, chains)
 
 **LLM**
-- Google Gemini 1.5 Flash/Pro
+- Groq API — llama-3.1-8b-instant
+- Free tier (console.groq.com)
 - Temperature: 0.1 (factual)
         """)
     with tech_cols[1]:
