@@ -592,16 +592,25 @@ def render_metrics_dashboard(metrics: Dict[str, float], hallucination_verdict: s
 with st.sidebar:
     st.markdown("## ⚙️ Configuration")
 
+    # Attempt to load from Streamlit Secrets first, then local .env
+    default_groq = ""
+    try: default_groq = st.secrets["GROQ_API_KEY"]
+    except: default_groq = os.environ.get("GROQ_API_KEY", "")
+
+    default_tavily = ""
+    try: default_tavily = st.secrets["TAVILY_API_KEY"]
+    except: default_tavily = os.environ.get("TAVILY_API_KEY", "")
+
     groq_key = st.text_input(
         "Groq API Key",
         type="password",
-        value=os.environ.get("GROQ_API_KEY", ""),
+        value=default_groq,
         help="Free key from console.groq.com — no credit card needed"
     )
     tavily_key = st.text_input(
         "Tavily API Key",
         type="password",
-        value=os.environ.get("TAVILY_API_KEY", ""),
+        value=default_tavily,
         help="For web search fallback"
     )
 
