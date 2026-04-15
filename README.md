@@ -8,6 +8,8 @@
 [![Streamlit](https://img.shields.io/badge/Streamlit-Frontend-FF4B4B?logo=streamlit)](https://streamlit.io)
 [![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector_Store-green)](https://www.trychroma.com/)
 
+**🔴 Live Demo:** [**https://meddqueryai.streamlit.app/**](https://meddqueryai.streamlit.app/)
+
 ---
 
 ##  Problem Statement
